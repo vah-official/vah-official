@@ -7,6 +7,25 @@ stay in order; the pages themselves live in the private reader, not here.
 - Concept record: https://vah-official.uk/
 - Source set: `pribadi/veta/v2.02` (master, ch-01 script, panelling) — private workspace
 
+## Drop a page, no JSON edits
+
+Names decide the order. Put the file in `assets/panels/ch01/` on the reader tree as
+`p09.jpg` (also accepted: `p9.jpg`, `09.jpg`, `9.jpg`, and the same with `.jpeg`,
+`.png`, `.webp`), then:
+
+```
+python3 webtoon-2.0/sync_pages.py   --chapter 1 --assets <reader tree>
+python3 webtoon-2.0/build_reader.py --chapter 1 --assets <reader tree> --out <reader tree>
+```
+
+`sync_pages.py` rescans the folder and rewrites the page list in `ch01/pages.json` from the
+filenames. Order is the number. A page already listed keeps its own fields (title, label,
+dialog, status); a new file gets status `reviewed` so it shows up immediately, override with
+`--new-status draft` if a page should wait. `--dry-run` prints the diff without writing.
+
+Tested 20 Nov: 8 files in, 8 entries out, nothing relinked (no-op). Add `p09.jpg` and
+`p10.jpg` and one sync + one build gives a 10-page reader with `index.html` untouched by hand.
+
 ## What 2.05 changed
 
 The reader got its reading surface rebuilt to Sayang's brief: content untouched (same 8 pages,
