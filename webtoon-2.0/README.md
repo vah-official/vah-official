@@ -3,7 +3,9 @@
 Structure record for the VAH vertical webtoon. This folder holds what the pipeline needs to
 stay in order; the pages themselves live in the private reader, not here.
 
-- Reader (private, owner + invited only): https://vah-workshop-vah-official.static.hf.space/
+- Reader (private, owner + invited only): https://vah-workshop-vah-webtoon.static.hf.space/
+  Moved 20 Nov: the 12 Nov Space `vah-workshop/vah-official` no longer exists; the 2.0 data
+  now sits in `vah-workshop/vah-webtoon`. Public 401 on that URL is expected while it is private.
 - Concept record: https://vah-official.uk/
 - Source set: `pribadi/veta/v2.02` (master, ch-01 script, panelling) — private workspace
 
