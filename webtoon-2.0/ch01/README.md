@@ -19,6 +19,20 @@ Pages 09-20 are not drawn yet; the script stops at page_08 and nothing past it i
 Insert panels `05A` and `05B` belong inside page 05's beat. They are mapped, not separate
 reader pages.
 
+## Release queue (the gate before a slot can run)
+
+So a weekly upload does not fall behind, pages are stocked ahead of time. A page that has art
+but no slot yet goes in with `"status": "queued"` plus an `"air_date": "YYYY-MM-DD"`. The reader
+never renders a queued page; when the slot comes, flip `status` to `reviewed` and rebuild.
+
+```json
+{ "page": "p09", "file": "assets/panels/ch01/p09.jpg",
+  "dialog": "en-final", "status": "queued", "air_date": "2026-11-23" }
+```
+
+`python3 build_reader.py --chapter 1 --check` reports the queue and exits non-zero while fewer
+than 4 pages are stocked or any queued page is missing a valid air date. Today: 0 stocked.
+
 ## Not decided here
 
 Chapter-level canon calls (final climax panel, headband term, character name changes) stay

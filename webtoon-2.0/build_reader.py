@@ -12,6 +12,7 @@ Pages must be listed in reading order. Only entries with status "reviewed"
 are published; pages still in draft are skipped (and reported).
 """
 import argparse
+import datetime
 import html
 import json
 import os
@@ -24,12 +25,47 @@ TEMPLATE = os.path.join(HERE, "template", "index.html.tmpl")
 ORDINALS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
             7: "seven", 8: "eight", 9: "nine", 10: "ten"}
 PUBLISH_STATUS = ("reviewed", "published", "canon")
+QUEUE_STATUS = "queued"
+QUEUE_MIN = 4          # pages that must be stocked ahead of the next slot
 
 
 def load(chapter):
     path = os.path.join(HERE, "ch%02d" % chapter, "pages.json")
     with open(path, encoding="utf-8") as f:
         return path, json.load(f)
+
+
+def queue_report(meta):
+    """Release gate: stocked pages need a scheduled air date, at least QUEUE_MIN of them.
+
+    A page is stocked when pages.json lists it with status "queued". Drafts are
+    not counted (no art yet). Returns (lines, problems).
+    """
+    lines, problems = [], []
+    queued = [p for p in meta.get("pages", []) if p.get("status") == QUEUE_STATUS]
+    dated, undated = [], []
+    for p in queued:
+        raw = (p.get("air_date") or "").strip()
+        if not raw:
+            undated.append(p["page"])
+            continue
+        try:
+            day = datetime.date.fromisoformat(raw)
+        except ValueError:
+            problems.append("%s has a bad air_date %r (want YYYY-MM-DD)" % (p["page"], raw))
+            continue
+        dated.append((day, p["page"]))
+    dated.sort()
+    if undated:
+        problems.append("queued without air_date: %s" % ", ".join(undated))
+    if dated:
+        lines.append("queue next air date: %s (%s)"
+                     % (dated[0][0].isoformat(), dated[0][1]))
+    if len(queued) < QUEUE_MIN:
+        problems.append("gate open: %d/%d pages stocked, upload %d more before the next slot"
+                        % (len(queued), QUEUE_MIN, QUEUE_MIN - len(queued)))
+    lines.insert(0, "queue: %d/%d stocked · dated %d" % (len(queued), QUEUE_MIN, len(dated)))
+    return lines, problems
 
 
 def render_pages(pages):
@@ -107,10 +143,17 @@ def main():
 
     print("build %s  chapter %02d  pages %d (%s..%s)  skipped %s"
           % (version, args.chapter, len(pages), names[0], names[-1], skipped or "none"))
+    q_lines, q_problems = queue_report(meta)
+    for line in q_lines:
+        print(line)
+    for line in q_problems:
+        print("QUEUE " + line)
     if missing:
         print("MISSING page files: %s" % missing)
     if args.check:
         if missing:
+            return 1
+        if q_problems:
             return 1
         print("check ok: reader renders from pages.json only")
         return 0
