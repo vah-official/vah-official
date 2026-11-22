@@ -15,8 +15,14 @@ unless --new-status says otherwise.
 Usage:
   python3 sync_pages.py --chapter 1 --assets /workspace/vah-hf
   python3 sync_pages.py --chapter 1 --assets /workspace/vah-hf --dry-run
+  python3 sync_pages.py --chapter 1 --assets /workspace/vah-hf \
+      --new-status queued --air-date 2026-11-25
+
+A page stocked for release (status "queued") needs a date, because the release
+gate in build_reader --check rejects an undated queue.
 """
 import argparse
+import datetime
 import json
 import os
 import re
@@ -52,10 +58,20 @@ def main():
     ap.add_argument("--assets", required=True, help="tree that holds assets/panels/chNN")
     ap.add_argument("--dir", default=None, help="override the panel folder (default: <assets>/<asset_dir>)")
     ap.add_argument("--new-status", default="reviewed",
-                    choices=["draft", "reviewed", "published", "canon"],
+                    choices=["draft", "queued", "reviewed", "published", "canon"],
                     help="status given to a page that is not in pages.json yet")
+    ap.add_argument("--air-date", default=None,
+                    help="YYYY-MM-DD for pages added as queued (required for --new-status queued)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    if args.new_status == "queued" and not args.air_date:
+        sys.exit("--new-status queued needs --air-date YYYY-MM-DD")
+    if args.air_date:
+        try:
+            datetime.date.fromisoformat(args.air_date)
+        except ValueError:
+            sys.exit("bad --air-date %r (want YYYY-MM-DD)" % args.air_date)
 
     path = os.path.join(HERE, "ch%02d" % args.chapter, "pages.json")
     with open(path, encoding="utf-8") as f:
@@ -80,6 +96,8 @@ def main():
                 entry["file"] = rel
         else:
             entry = {"page": pid, "file": rel, "dialog": "en-final", "status": args.new_status}
+            if args.new_status == "queued":
+                entry["air_date"] = args.air_date
             added.append(pid)
         pages.append(entry)
 
